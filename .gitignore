@@ -1,0 +1,27 @@
+# 忽略作業系統產生的檔案
+.DS_Store
+*.swp
+*~
+Thumbs.db
+
+# 忽略編輯器和 IDE 的設定檔
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sublime-workspace
+
+# 忽略日誌檔案
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 忽略 node_modules 目錄 (如果未來使用 npm)
+node_modules/
+
+# 忽略建置產物 (如果未來有建置流程)
+dist/
+build/

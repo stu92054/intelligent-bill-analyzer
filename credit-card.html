@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧帳單分析儀 (信用卡)</title>
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- [FIX] Using the correct browser-specific version of the buffer library -->
+    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/dist/buffer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jimp/0.16.1/jimp.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Navigation will be injected here by nav.js -->
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">智慧帳單分析儀</h1>
+            <p class="mt-2 text-lg text-gray-600">支援月份分組、自訂結帳日與OCR</p>
+        </header>
+
+        <main class="space-y-8">
+            <!-- Settings -->
+            <section id="part-settings">
+                <div class="bg-white p-4 rounded-lg shadow-sm space-y-4">
+                    <h2 class="text-xl font-bold">通用設定</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="cutoff-day-input" class="font-semibold text-gray-700">帳單結算日:</label>
+                            <div class="flex items-center gap-4 mt-2">
+                                <input type="number" id="cutoff-day-input" min="1" max="28" value="15" class="w-24 p-2 border border-gray-300 rounded-md">
+                                <p class="text-sm text-gray-500">設定此日期以正確歸戶帳單月份。</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="model-select" class="font-semibold text-gray-700">分析模型:</label>
+                            <div class="flex items-center gap-4 mt-2">
+                                <select id="model-select" class="w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash (速度快)</option>
+                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (功能強)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="password-preset-input" class="font-semibold text-gray-700">預設密碼管理:</label>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="password" id="password-preset-input" class="flex-grow p-2 border border-gray-300 rounded-md" placeholder="新增一組常用密碼 (例如：身分證字號)">
+                            <button id="add-password-preset-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">新增</button>
+                        </div>
+                        <div id="password-preset-list" class="mt-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Part 0: Load/Save -->
+            <section id="part0">
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-bold mb-3">資料管理</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div id="load-area" class="drag-area p-4 text-center cursor-pointer">
+                            <p class="font-semibold text-gray-700">📂 讀取本地存檔</p>
+                            <p class="text-sm text-gray-500">將 .json 存檔拖曳至此或點擊選取</p>
+                            <input type="file" id="load-input" class="hidden" accept=".json">
+                        </div>
+                        <div>
+                             <button id="save-button" class="w-full h-full bg-blue-600 text-white p-4 rounded-md hover:bg-blue-700 font-bold text-lg flex items-center justify-center gap-2 disabled:bg-gray-400" disabled>
+                                💾 儲存分析結果
+                            </button>
+                        </div>
+                        <div>
+                             <button id="clear-storage-button" class="w-full h-full bg-red-600 text-white p-4 rounded-md hover:bg-red-700 font-bold text-lg flex items-center justify-center gap-2">
+                                🗑️ 清除自動存檔
+                            </button>
+                        </div>
+                    </div>
+                     <p id="load-status" class="text-sm text-green-600 mt-2 text-center font-semibold hidden"></p>
+                </div>
+            </section>
+
+            <!-- Part 1: Batch Upload -->
+            <section id="part1">
+                <div class="flex items-center mb-2">
+                    <span class="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white font-bold rounded-full mr-3">1</span>
+                    <h2 class="text-2xl font-bold">上傳多份帳單</h2>
+                </div>
+                <div id="drag-area" class="drag-area bg-white rounded-lg p-8 md:p-12 text-center cursor-pointer">
+                    <div id="upload-content">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4V12a4 4 0 014-4h12l4 4h12a4 4 0 014 4v4m-8-8l-4-4m0 0L8 8m16 4v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                        <p class="mt-4 font-semibold text-gray-700">將多個 PDF 檔案拖曳至此</p>
+                        <p class="text-sm text-gray-500">或點擊選擇檔案</p>
+                        <input type="file" id="file-input" class="hidden" accept=".pdf" multiple>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Part 2: File Queue and Analysis -->
+            <section id="part2" class="hidden">
+                 <div class="flex items-center mb-2">
+                    <span class="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white font-bold rounded-full mr-3">2</span>
+                    <h2 class="text-2xl font-bold">處理佇列與分析</h2>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div id="file-queue" class="space-y-3 mb-6">
+                        <!-- File items will be injected here -->
+                    </div>
+                    <div class="mb-4">
+                        <label for="api-key-input" class="block font-medium text-gray-700 mb-1">您的 Gemini API 金鑰</label>
+                        <div class="flex gap-2">
+                            <input type="password" id="api-key-input" class="flex-grow p-2 border border-gray-300 rounded-md" placeholder="請在此貼上您的 API Key">
+                            <button id="save-api-key-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">儲存金鑰</button>
+                            <button id="clear-api-key-button" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">清除</button>
+                        </div>
+                        <p id="api-key-status" class="text-sm text-green-600 mt-1"></p>
+                    </div>
+                    <button id="batch-analyze-button" class="w-full bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-bold text-lg flex items-center justify-center gap-2">
+                        🚀 開始分析
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Part 3: Aggregated Results by Month -->
+            <section id="part3" class="hidden">
+                <div class="flex items-center mb-2">
+                    <span class="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white font-bold rounded-full mr-3">3</span>
+                    <h2 class="text-2xl font-bold">彙總分析結果</h2>
+                </div>
+                <div id="aggregated-results" class="space-y-12">
+                    <!-- Monthly result sections will be injected here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="password-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="password-modal-title">檔案需要密碼</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500 mb-4">請為檔案 <strong id="password-filename"></strong> 輸入密碼：</p>
+                    <input type="password" id="password-modal-input" class="w-full p-2 border border-gray-300 rounded-md">
+                    <p id="password-modal-error" class="text-red-500 text-sm mt-1 hidden">密碼錯誤。</p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="password-modal-submit" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700">
+                        解密並繼續
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Scripts -->
+    <script src="js/nav.js"></script>
+    <script src="js/shared.js"></script>
+    <script src="js/credit-card.js"></script>
+</body>
+</html>

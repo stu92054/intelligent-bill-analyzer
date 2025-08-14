@@ -1,0 +1,79 @@
+/* General Body and Font Styles */
+body {
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    background-color: #f3f4f6; /* gray-100 */
+    color: #1f2937; /* gray-800 */
+}
+
+/* Drag and Drop Area Styling */
+.drag-area {
+    border: 3px dashed #cbd5e1; /* gray-300 */
+    transition: all 0.3s ease;
+}
+
+.drag-area.active {
+    border-color: #4f46e5; /* indigo-600 */
+    background-color: #eef2ff; /* indigo-50 */
+}
+
+/* Loading Spinner Animation */
+.spinner {
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border-left-color: #4f46e5; /* indigo-600 */
+    animation: spin 1s ease infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Sortable Table Header */
+.sortable-header {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.sortable-header:hover {
+    background-color: #e5e7eb; /* gray-200 */
+}
+
+.sort-asc::after {
+    content: ' ▲';
+    font-size: 0.7em;
+}
+
+.sort-desc::after {
+    content: ' ▼';
+    font-size: 0.7em;
+}
+
+/* Editable Content Focus Style */
+[contenteditable="true"]:focus {
+    outline: 2px solid #4f46e5; /* indigo-600 */
+    background-color: #eef2ff; /* indigo-50 */
+}
+
+/* Password Preset Chip Styling */
+.password-chip {
+    display: inline-flex;
+    align-items: center;
+    background-color: #e0e7ff; /* indigo-200 */
+    color: #4338ca; /* indigo-700 */
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin: 4px;
+}
+
+.password-chip button {
+    margin-left: 8px;
+    background: none;
+    border: none;
+    color: #4338ca; /* indigo-700 */
+    cursor: pointer;
+    font-weight: bold;
+}
