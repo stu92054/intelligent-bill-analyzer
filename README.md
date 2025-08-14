@@ -15,7 +15,7 @@ A powerful, client-side web application designed to help users effortlessly pars
 * **AI Financial Advisor**:
     * Generate a personalized financial advice report based on your actual data with a single click.
     * Engage in a **multi-turn conversational chat** to clarify and delve deeper into your financial questions.
-* **High Privacy Protection**: All PDF parsing and AI analysis are performed **entirely on the client-side (in your browser)**. Your personal financial data is **never uploaded to any server**, ensuring absolute privacy and security.
+* **Privacy-Focused Design**: All PDF parsing is performed **entirely on the client-side (in your browser)**, ensuring your original files are not exposed. Only when you request an AI analysis, the extracted text data is sent to Google for processing. This tool **does not store** your personal financial data on any server.
 * **Data Sovereignty**: Export your analyzed data as a `.json` file for local backup and import it anytime to restore your session.
 
 ## 🚀 Tech Stack
